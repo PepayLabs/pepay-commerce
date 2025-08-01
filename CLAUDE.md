@@ -183,6 +183,22 @@ When working on this codebase:
 4. **User Experience**: Prioritize smooth interactions and fast loads
 5. **Web3 Best Practices**: Handle wallet states and network changes gracefully
 
+## Common React Gotchas
+
+### Conditional Rendering with Numbers
+React will render the number `0` when used in conditional expressions. Always convert numeric values to booleans:
+
+```typescript
+// ❌ Bad - will render "0" when count is 0
+{count && <Component />}
+
+// ✅ Good - properly converts to boolean
+{!!count && <Component />}
+{count > 0 && <Component />}
+```
+
+This is especially important with API responses that return numeric values like counts, quantities, or IDs.
+
 ## Quick Command Reference
 
 ```bash

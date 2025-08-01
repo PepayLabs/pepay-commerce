@@ -195,13 +195,11 @@ export default function UserSignIn() {
             <Box sx={{ textAlign: 'center', mb: 4 }}>
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 3 }}>
                 <img
-                  src="/images/gmas-app-square.png"
-                  alt="Grab Me A Slice Logo"
+                  src="/images/pepay-labs-rounded.png"
+                  alt="Pepay Commerce Logo"
                   style={{ height: 48, marginRight: 12 }}
                 />
-                <Typography variant="h5" component="h1" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                  Grab Me A Slice
-                </Typography>
+
               </Box>
               
               <Typography variant="h4" component="h2" sx={{ mb: 1, fontWeight: 600 }}>
@@ -209,7 +207,7 @@ export default function UserSignIn() {
               </Typography>
               
               <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                Access exclusive content from your favorite creators
+                Buy products from your favorte retailers with crypto
               </Typography>
 
               <Alert 
@@ -228,7 +226,7 @@ export default function UserSignIn() {
                   First Time Here?
                 </AlertTitle>
                 <Typography variant="body2" sx={{ mt: 0.5 }}>
-                  Connect with the same wallet you used for donations or subscriptions to access premium content.
+                  Connect with the same wallet that you use for your purchases.
                 </Typography>
               </Alert>
             </Box>

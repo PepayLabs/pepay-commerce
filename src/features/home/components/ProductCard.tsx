@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardMedia,
@@ -10,14 +10,21 @@ import {
   Skeleton,
   IconButton,
   Tooltip,
+  Button,
 } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import StarIcon from '@mui/icons-material/Star';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import CheckIcon from '@mui/icons-material/Check';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Product } from '../types/search.types';
+import { useCartStore } from '@/features/cart/store/cartStore';
 
 interface ProductCardProps {
   product: Product;
   onClick?: () => void;
+  onDetailClick?: (product: Product) => void;
+  onAddToCart?: (product: Product) => void;
 }
 
 // Utility function to truncate long titles intelligently
@@ -53,7 +60,11 @@ const formatReviewCount = (count: number): string => {
   return count.toString();
 };
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick, onDetailClick, onAddToCart }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const findItem = useCartStore((state) => state.findItem);
+  const isInCart = !!findItem(product.productId);
+
   const handleCardClick = () => {
     if (onClick) {
       onClick();
@@ -65,9 +76,25 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
     window.open(product.url, '_blank', 'noopener,noreferrer');
   };
 
+  const handleDetailClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDetailClick) {
+      onDetailClick(product);
+    }
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onAddToCart) {
+      onAddToCart(product);
+    }
+  };
+
   return (
     <Card
       onClick={handleCardClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       sx={{
         height: '100%',
         display: 'flex',
@@ -222,7 +249,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
           }}
         >
           <Rating
-            value={product.rating}
+            value={product.stars || 0}
             precision={0.1}
             readOnly
             size="small"
@@ -236,7 +263,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
               fontSize: '13px',
             }}
           >
-            {product.rating.toFixed(1)}
+            {(product.stars || 0).toFixed(1)}
           </Typography>
           <Typography
             variant="body2"
@@ -245,29 +272,121 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
               fontSize: '13px',
             }}
           >
-            ({formatReviewCount(product.reviewCount)})
+            ({formatReviewCount(product.numReviews || 0)})
           </Typography>
         </Box>
 
-        {/* Retailer */}
+        {/* Bottom Actions Row */}
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: 0.5,
-            mt: 1,
+            justifyContent: 'space-between',
+            mt: 2,
+            gap: 1,
           }}
         >
-          <Typography
-            variant="caption"
+          {/* Retailer with Link */}
+          <Box
+            onClick={handleLinkClick}
             sx={{
-              color: '#9ca3af',
-              fontSize: '12px',
-              textTransform: 'capitalize',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              cursor: 'pointer',
+              transition: 'all 200ms ease',
+              '&:hover': {
+                color: '#2563eb',
+                '& .retailer-text': {
+                  color: '#2563eb',
+                },
+              },
             }}
           >
-            from {product.retailer}
-          </Typography>
+            <Typography
+              variant="caption"
+              className="retailer-text"
+              sx={{
+                color: '#9ca3af',
+                fontSize: '12px',
+                textTransform: 'capitalize',
+                transition: 'color 200ms ease',
+              }}
+            >
+              from {product.retailer}
+            </Typography>
+            <OpenInNewIcon 
+              sx={{ 
+                fontSize: '14px', 
+                color: isHovered ? '#2563eb' : '#9ca3af',
+                transition: 'all 200ms ease',
+              }} 
+            />
+          </Box>
+
+          {/* Action Buttons */}
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 0.5,
+              alignItems: 'center',
+            }}
+          >
+            {/* Detail View Button */}
+            <Tooltip title="View Details">
+              <IconButton
+                size="small"
+                onClick={handleDetailClick}
+                sx={{
+                  padding: '4px',
+                  color: '#6b7280',
+                  '&:hover': {
+                    backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                    color: '#2563eb',
+                  },
+                }}
+              >
+                <InfoOutlinedIcon sx={{ fontSize: '18px' }} />
+              </IconButton>
+            </Tooltip>
+
+            {/* Add to Cart Button */}
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={isInCart ? <CheckIcon sx={{ fontSize: '16px' }} /> : <ShoppingCartIcon sx={{ fontSize: '16px' }} />}
+              onClick={handleAddToCart}
+              sx={{
+                fontSize: '12px',
+                fontWeight: 500,
+                px: 1.5,
+                py: 0.5,
+                textTransform: 'none',
+                background: isInCart 
+                  ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
+                  : 'radial-gradient(circle at 30% 30%, rgba(0,140,255,0.95) 0%, rgba(0,75,170,0.95) 100%)',
+                color: '#fff',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                boxShadow: isInCart ? '0 2px 8px rgba(16,185,129,0.2)' : '0 2px 8px rgba(0,140,255,0.2)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                transition: 'all 200ms ease',
+                '&:hover': {
+                  background: isInCart 
+                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
+                    : 'radial-gradient(circle at 30% 30%, rgba(0,150,255,1), rgba(0,60,140,1))',
+                  boxShadow: isInCart ? '0 4px 12px rgba(16,185,129,0.3)' : '0 4px 12px rgba(0,140,255,0.3)',
+                  transform: isInCart ? 'none' : 'translateY(-1px)',
+                },
+                '&.Mui-disabled': {
+                  color: '#fff',
+                  opacity: 1,
+                },
+              }}
+            >
+              {isInCart ? 'Added' : 'Add'}
+            </Button>
+          </Box>
         </Box>
       </CardContent>
     </Card>

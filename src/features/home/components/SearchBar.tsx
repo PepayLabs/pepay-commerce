@@ -397,19 +397,34 @@ export const SearchBar: React.FC<SearchBarProps> = React.memo(({
                   borderRadius: '20px',
                   fontSize: '14px',
                   fontWeight: selectedCountry === country.code ? 600 : 500,
-                  backgroundColor: selectedCountry === country.code ? '#2563eb' : '#fff',
+                  background: selectedCountry === country.code 
+                    ? 'radial-gradient(circle at 30% 30%, rgba(0,140,255,0.95) 0%, rgba(0,75,170,0.95) 100%)' 
+                    : '#fff',
                   color: selectedCountry === country.code ? '#fff' : country.available ? '#5f6368' : '#80868b',
-                  border: selectedCountry === country.code ? '1px solid #2563eb' : '1px solid #dadce0',
+                  border: selectedCountry === country.code 
+                    ? '1px solid rgba(255, 255, 255, 0.25)' 
+                    : '1px solid #dadce0',
                   px: 2.5,
                   transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
                   cursor: country.available ? 'pointer' : 'not-allowed',
                   opacity: country.available ? 1 : 0.7,
                   position: 'relative',
+                  boxShadow: selectedCountry === country.code 
+                    ? '0 8px 20px rgba(0,140,255,0.25)' 
+                    : 'none',
+                  backdropFilter: selectedCountry === country.code ? 'blur(14px)' : 'none',
+                  WebkitBackdropFilter: selectedCountry === country.code ? 'blur(14px)' : 'none',
                   '&:hover': country.available ? {
-                    backgroundColor: selectedCountry === country.code ? '#1d4ed8' : '#f8f9fa',
-                    borderColor: selectedCountry === country.code ? '#1d4ed8' : '#2563eb',
+                    background: selectedCountry === country.code 
+                      ? 'radial-gradient(circle at 30% 30%, rgba(0,150,255,1), rgba(0,60,140,1))' 
+                      : '#f8f9fa',
+                    borderColor: selectedCountry === country.code 
+                      ? 'rgba(255, 255, 255, 0.3)' 
+                      : '#008CFF',
                     transform: 'translateY(-1px)',
-                    boxShadow: '0 2px 8px rgba(37, 99, 235, 0.15)',
+                    boxShadow: selectedCountry === country.code 
+                      ? '0 10px 28px rgba(0,140,255,0.3)' 
+                      : '0 2px 8px rgba(0,140,255,0.15)',
                   } : {},
                   '& .MuiChip-label': {
                     px: 0,
@@ -422,8 +437,8 @@ export const SearchBar: React.FC<SearchBarProps> = React.memo(({
                       right: '-16px',
                       fontSize: '11px',
                       fontWeight: 600,
-                      color: '#2563eb',
-                      backgroundColor: '#e0e7ff',
+                      color: '#0075AA',
+                      backgroundColor: 'rgba(0,140,255,0.1)',
                       padding: '2px 8px',
                       borderRadius: '10px',
                     }

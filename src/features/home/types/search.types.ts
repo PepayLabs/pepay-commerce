@@ -4,11 +4,13 @@ export interface Product {
   title: string;
   price: number;
   image: string;
-  rating: number;
-  reviewCount: number;
+  stars: number;
+  numReviews: number;
   fresh: boolean;
   retailer: string;
   url: string;
+  brand?: string;
+  categories?: string[];
 }
 
 // Pagination data

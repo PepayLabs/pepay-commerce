@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { auth } from '@/lib/auth'
+import { userAuth } from '@/lib/userAuth'
 
 export const axiosInstance = axios.create({
   baseURL: import.meta.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
@@ -16,10 +17,19 @@ axiosInstance.interceptors.request.use(async (config) => {
     return config
   }
   
-  const token = await auth.getAccessToken()
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+  // Check for wallet authentication first (USER_AUTHORIZATION)
+  const walletToken = userAuth.getAccessToken()
+  if (walletToken) {
+    config.headers['USER_AUTHORIZATION'] = `Bearer ${walletToken}`
+    return config
   }
+  
+  // Fall back to regular authentication (Authorization)
+  const regularToken = await auth.getAccessToken()
+  if (regularToken) {
+    config.headers.Authorization = `Bearer ${regularToken}`
+  }
+  
   return config
 })
 
@@ -48,27 +58,39 @@ axiosInstance.interceptors.response.use(
 
       console.log('🔄 401 detected, attempting token refresh...')
       
-      try {
-        const refreshed = await auth.refreshTokens()
-        if (refreshed) {
-          console.log('✅ Token refresh successful, retrying request...')
-          // Update the original request with new token
-          const newToken = auth.getAccessToken()
-          if (newToken) {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`
-            // Retry the original request
-            return axiosInstance(originalRequest)
-          }
-        }
-      } catch (refreshError) {
-        console.error('❌ Token refresh failed:', refreshError)
-      }
+      // Check if this was a wallet authentication request
+      const isWalletAuth = originalRequest.headers?.['USER_AUTHORIZATION']
       
-      // If refresh failed, logout and redirect
-      console.log('🚪 Authentication failed, redirecting to login')
-      auth.logout()
-      auth.redirectToLogin()
-      return Promise.reject(error)
+      if (isWalletAuth) {
+        // For wallet auth, we don't have refresh tokens yet
+        // Just clear credentials and reject
+        console.log('🚪 Wallet authentication failed, clearing credentials')
+        userAuth.clearCredentials()
+        return Promise.reject(error)
+      } else {
+        // For regular auth, try to refresh
+        try {
+          const refreshed = await auth.refreshTokens()
+          if (refreshed) {
+            console.log('✅ Token refresh successful, retrying request...')
+            // Update the original request with new token
+            const newToken = auth.getAccessToken()
+            if (newToken) {
+              originalRequest.headers.Authorization = `Bearer ${newToken}`
+              // Retry the original request
+              return axiosInstance(originalRequest)
+            }
+          }
+        } catch (refreshError) {
+          console.error('❌ Token refresh failed:', refreshError)
+        }
+        
+        // If refresh failed, logout and redirect
+        console.log('🚪 Authentication failed, redirecting to login')
+        auth.logout()
+        auth.redirectToLogin()
+        return Promise.reject(error)
+      }
     }
 
     // For 400 errors, let's log the details to help debug

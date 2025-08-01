@@ -7,7 +7,6 @@ import { Link } from '@tanstack/react-router'
 import AppBar from '@mui/material/AppBar'
 import Box from '@mui/material/Box'
 import Toolbar from '@mui/material/Toolbar'
-import Typography from '@mui/material/Typography'
 // import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Drawer from '@mui/material/Drawer'
@@ -18,21 +17,20 @@ import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
 import Divider from '@mui/material/Divider'
 // import Container from '@mui/material/Container'
-import SvgIcon from '@mui/material/SvgIcon';
+import Badge from '@mui/material/Badge';
+
+// Custom Components
+import AuthenticationButton from './components/AuthenticationButton';
+import CartButton from './components/CartButton';
+import { CartModal } from '@/features/cart/components/CartModal';
 
 // MUI Icons
 import MenuIcon from '@mui/icons-material/Menu'
 import CloseIcon from '@mui/icons-material/Close'
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
-import AppsRoundedIcon from '@mui/icons-material/AppsRounded'
-import CodeRoundedIcon from '@mui/icons-material/CodeRounded'
-// import WidgetsRoundedIcon from '@mui/icons-material/WidgetsRounded'
-// import ColorLensRoundedIcon from '@mui/icons-material/ColorLensRounded'
-// import ArticleRoundedIcon from '@mui/icons-material/ArticleRounded'
-// import TwitterIcon from '@mui/icons-material/Twitter'
-// import GitHubIcon from '@mui/icons-material/GitHub'
-// import TelegramIcon from '@mui/icons-material/Telegram'
-import OpacityIcon from '@mui/icons-material/Opacity'
+import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded'
+import ShoppingCartRoundedIcon from '@mui/icons-material/ShoppingCartRounded'
+import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded'
 import LocalPizzaIcon from '@mui/icons-material/LocalPizza'
 
 // Material 3 Theme Provider
@@ -108,29 +106,95 @@ const materialTheme = createTheme({
   },
 });
 
-// Custom faucet icon
-function FaucetIcon(props) {
-  return (
-    <SvgIcon {...props}>
-      <path d="M20,20V4c0-1.1-0.9-2-2-2H6C4.9,2,4,2.9,4,4v16H20z M8,5h8v3H8V5z M14,17h-4v-6h4V17z" />
-    </SvgIcon>
-  );
-}
 
-// Navigation items for the left sidebar (matching Material Design website)
-const navigationItems = [
-  { title: "Home", path: "/", icon: <HomeRoundedIcon /> },
-  { title: "Get started", path: "/sign-in", icon: <AppsRoundedIcon /> },
-  { title: "Develop", path: "https://docs.pepay.io", icon: <CodeRoundedIcon />, external: true },
-  { title: "Faucet", path: "/faucet", icon: <OpacityIcon /> },
-  { title: "Community", path: "https://community.pepay.io", icon: <LocalPizzaIcon /> },
-];
+// Import additional components
+import Avatar from '@mui/material/Avatar';
+import PersonIcon from '@mui/icons-material/Person';
+import Tooltip from '@mui/material/Tooltip';
+import { userAuth } from '@/lib/userAuth';
+import { useEffect } from 'react';
+import { useCartItemCount } from '@/features/cart/store/cartStore';
+
+// Function to get a consistent avatar based on wallet address
+const getWalletAvatar = (walletAddress: string): string => {
+  const profileImages = [
+    '/images/profiles/1.jpg', '/images/profiles/2.jpg', '/images/profiles/3.jpg',
+    '/images/profiles/4.png', '/images/profiles/5.png', '/images/profiles/6.png',
+    '/images/profiles/7.png', '/images/profiles/8.png', '/images/profiles/9.png',
+    '/images/profiles/10.png', '/images/profiles/11.jpg', '/images/profiles/12.png',
+    '/images/profiles/13.jpg', '/images/profiles/14.png', '/images/profiles/15.png',
+    '/images/profiles/16.png', '/images/profiles/17.jpeg', '/images/profiles/18.png',
+    '/images/profiles/19.png', '/images/profiles/20.png', '/images/profiles/21.jpeg',
+    '/images/profiles/22.png', '/images/profiles/23.png', '/images/profiles/24.jpg',
+    '/images/profiles/25.jpg', '/images/profiles/26.jpeg', '/images/profiles/27.png',
+    '/images/profiles/28.jpg', '/images/profiles/29.jpg', '/images/profiles/30.png',
+    '/images/profiles/31.png', '/images/profiles/32.png'
+  ];
+
+  // Generate consistent index based on wallet address
+  let hash = 0;
+  for (let i = 0; i < walletAddress.length; i++) {
+    const char = walletAddress.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  
+  const index = Math.abs(hash) % profileImages.length;
+  return profileImages[index];
+};
 
 // Drawer width for desktop
 const DRAWER_WIDTH = 90;
 
 export default function MaterialLayout({ children }: MaterialLayoutProps) {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [authState, setAuthState] = useState(userAuth.getAuthState());
+  const [cartModalOpen, setCartModalOpen] = useState(false);
+  const cartItemCount = useCartItemCount();
+
+  // Update auth state when component mounts or when localStorage changes
+  useEffect(() => {
+    const updateAuthState = () => {
+      setAuthState(userAuth.getAuthState());
+    };
+
+    updateAuthState();
+    
+    // Listen for storage changes (logout from other tabs)
+    window.addEventListener('storage', updateAuthState);
+    
+    return () => {
+      window.removeEventListener('storage', updateAuthState);
+    };
+  }, []);
+
+  // Navigation items for the left sidebar - now dynamic based on auth state
+  const navigationItems = [
+    { title: "Home", path: "/", icon: <HomeRoundedIcon /> },
+    { 
+      title: authState.isAuthenticated ? "Account" : "Account", 
+      path: authState.isAuthenticated ? "/account" : "/sign-in", 
+      icon: authState.isAuthenticated && authState.walletAddress ? (
+        <Avatar 
+          src={getWalletAvatar(authState.walletAddress)}
+          sx={{ width: 24, height: 24 }}
+        >
+          <PersonIcon sx={{ fontSize: 16 }} />
+        </Avatar>
+      ) : (
+        <AccountCircleRoundedIcon />
+      )
+    },
+    { 
+      title: "Cart", 
+      path: "/cart", 
+      icon: <ShoppingCartRoundedIcon />, 
+      badge: cartItemCount,
+      onClick: () => setCartModalOpen(true) // Open cart modal instead of navigating
+    },
+    { title: "History", path: "/history", icon: <HistoryRoundedIcon /> },
+    { title: "Community", path: "https://community.pepay.io", icon: <LocalPizzaIcon />, external: true },
+  ];
 
   const toggleMobileDrawer = () => {
     setMobileDrawerOpen(!mobileDrawerOpen);
@@ -139,6 +203,12 @@ export default function MaterialLayout({ children }: MaterialLayoutProps) {
   return (
     <ThemeProvider theme={materialTheme}>
       <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+        {/* Desktop buttons - Cart and Authentication in fixed corner */}
+        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+          <CartButton onClick={() => setCartModalOpen(true)} />
+          <AuthenticationButton />
+        </Box>
+        
         {/* Desktop Left Sidebar - Permanent on desktop */}
         <Drawer
           variant="permanent"
@@ -192,11 +262,12 @@ export default function MaterialLayout({ children }: MaterialLayoutProps) {
               {navigationItems.map((item) => (
                 <ListItem key={item.title} disablePadding sx={{ display: 'block', mb: 1 }}>
                   <ListItemButton
-                    component={item.external ? 'a' : Link}
-                    to={!item.external ? item.path : undefined}
+                    component={item.external ? 'a' : item.onClick ? 'button' : Link}
+                    to={!item.external && !item.onClick ? item.path : undefined}
                     href={item.external ? item.path : undefined}
                     target={item.external ? "_blank" : undefined}
                     rel={item.external ? "noopener noreferrer" : undefined}
+                    onClick={item.onClick}
                     sx={{
                       minHeight: 48,
                       justifyContent: 'center',
@@ -216,14 +287,42 @@ export default function MaterialLayout({ children }: MaterialLayoutProps) {
                         mb: 0.5,
                       }}
                     >
-                      {item.icon}
+                      {item.badge !== undefined ? (
+                        <Badge 
+                          badgeContent={item.badge} 
+                          showZero={false}
+                          sx={{
+                            '& .MuiBadge-badge': {
+                              background: 'radial-gradient(circle at 30% 30%, rgba(0,140,255,0.95) 0%, rgba(0,75,170,0.95) 100%)',
+                              color: 'white',
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              minWidth: '18px',
+                              height: '18px',
+                              padding: '0 4px',
+                              border: '1px solid rgba(255, 255, 255, 0.25)',
+                              boxShadow: '0 2px 8px rgba(0,140,255,0.25)',
+                            }
+                          }}
+                        >
+                          {item.icon}
+                        </Badge>
+                      ) : item.title === "Account" && authState.isAuthenticated && authState.walletAddress ? (
+                        <Tooltip title={`Wallet: ${authState.walletAddress.slice(0, 6)}...${authState.walletAddress.slice(-4)}`} placement="right">
+                          <span>{item.icon}</span>
+                        </Tooltip>
+                      ) : (
+                        item.icon
+                      )}
                     </ListItemIcon>
                     <ListItemText 
                       primary={item.title} 
-                      primaryTypographyProps={{
-                        variant: 'body2',
-                        align: 'center',
-                        sx: { fontWeight: 500 }
+                      sx={{
+                        '& .MuiTypography-root': {
+                          fontSize: '.95rem',
+                          textAlign: 'center',
+                          fontWeight: 400
+                        }
                       }}
                     />
                   </ListItemButton>
@@ -292,15 +391,21 @@ export default function MaterialLayout({ children }: MaterialLayoutProps) {
                 }}
               >
                 <img 
-                  src="/images/logo-written-no-art.png" 
+                  src="/images/pepay_written_logo.png" 
                   alt="PEPAY" 
                   style={{ 
-                    height: '100%',
+                    height: '115%',
                     width: 'auto',
                     objectFit: 'contain'
                   }} 
                 />
               </Box>
+            </Box>
+            
+            {/* Cart and Authentication buttons for mobile */}
+            <Box sx={{ display: { xs: 'flex', md: 'none' }, gap: 1 }}>
+              <CartButton onClick={() => setCartModalOpen(true)} />
+              <AuthenticationButton />
             </Box>
           </Toolbar>
         </AppBar>
@@ -330,7 +435,7 @@ export default function MaterialLayout({ children }: MaterialLayoutProps) {
                 mr: 1.5
               }}>
                 <img 
-                  src="/images/PEPAY-logo-written-prod.png" 
+                  src="/images/pepay-labs-logo.png" 
                   alt="Pepay Logo" 
                   style={{ 
                     width: '100%', 
@@ -347,10 +452,10 @@ export default function MaterialLayout({ children }: MaterialLayoutProps) {
                 }}
               >
                 <img 
-                  src="/images/logo-written-no-art.png" 
+                  src="/images/pepay_written_logo.png" 
                   alt="PEPAY" 
                   style={{ 
-                    height: '100%',
+                    height: '130%',
                     width: 'auto',
                     objectFit: 'contain'
                   }} 
@@ -366,12 +471,17 @@ export default function MaterialLayout({ children }: MaterialLayoutProps) {
             {navigationItems.map((item, index) => (
               <ListItem key={index} disablePadding>
                 <ListItemButton
-                  component={item.external ? 'a' : Link}
-                  to={!item.external ? item.path : undefined}
+                  component={item.external ? 'a' : item.onClick ? 'button' : Link}
+                  to={!item.external && !item.onClick ? item.path : undefined}
                   href={item.external ? item.path : undefined}
                   target={item.external ? "_blank" : undefined}
                   rel={item.external ? "noopener noreferrer" : undefined}
-                  onClick={toggleMobileDrawer}
+                  onClick={() => {
+                    if (item.onClick) {
+                      item.onClick();
+                    }
+                    toggleMobileDrawer();
+                  }}
                   sx={{
                     py: 1.5,
                     '&:hover': {
@@ -380,15 +490,39 @@ export default function MaterialLayout({ children }: MaterialLayoutProps) {
                   }}
                 >
                   <ListItemIcon sx={{ minWidth: 40 }}>
-                    {item.icon}
+                    {item.badge !== undefined ? (
+                      <Badge 
+                        badgeContent={item.badge} 
+                        showZero={false}
+                        sx={{
+                          '& .MuiBadge-badge': {
+                            background: 'radial-gradient(circle at 30% 30%, rgba(0,140,255,0.95) 0%, rgba(0,75,170,0.95) 100%)',
+                            color: 'white',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            minWidth: '18px',
+                            height: '18px',
+                            padding: '0 4px',
+                            border: '1px solid rgba(255, 255, 255, 0.25)',
+                            boxShadow: '0 2px 8px rgba(0,140,255,0.25)',
+                          }
+                        }}
+                      >
+                        {item.icon}
+                      </Badge>
+                    ) : (
+                      item.icon
+                    )}
                   </ListItemIcon>
                   <ListItemText 
                     primary={item.title} 
-                    primaryTypographyProps={{ 
-                      fontSize: '0.9rem',
-                      fontWeight: 500,
-                      fontFamily: '"Google Sans Text", sans-serif',
-                    }} 
+                    sx={{
+                      '& .MuiTypography-root': {
+                        fontSize: '0.9rem',
+                        fontWeight: 500,
+                        fontFamily: '"Google Sans Text", sans-serif',
+                      }
+                    }}
                   />
                 </ListItemButton>
               </ListItem>
@@ -417,6 +551,12 @@ export default function MaterialLayout({ children }: MaterialLayoutProps) {
           </Box>
         </Box>
       </Box>
+      
+      {/* Cart Modal */}
+      <CartModal 
+        open={cartModalOpen} 
+        onClose={() => setCartModalOpen(false)} 
+      />
     </ThemeProvider>
   );
 }

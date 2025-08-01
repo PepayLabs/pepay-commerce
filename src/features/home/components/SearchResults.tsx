@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -11,8 +11,11 @@ import {
 } from '@mui/material';
 import { Product } from '../types/search.types';
 import { ProductCard, ProductCardSkeleton } from './ProductCard';
+import { ProductDetailModal } from './ProductDetailModal';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
+import { useAddToCart, useRemoveFromCart } from '@/features/cart/hooks/useCart';
+import { useCartStore } from '@/features/cart/store/cartStore';
 
 interface SearchResultsProps {
   products: Product[];
@@ -41,10 +44,52 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   onRetry,
   onProductClick,
 }) => {
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const { mutate: addToCart } = useAddToCart();
+  const { mutate: removeFromCart } = useRemoveFromCart();
+  const findItem = useCartStore((state) => state.findItem);
+
+  const handleDetailClick = (product: Product) => {
+    setSelectedProduct(product);
+    setDetailModalOpen(true);
+  };
+
+  const handleDetailModalClose = () => {
+    setDetailModalOpen(false);
+    // Keep selectedProduct for animation purposes
+  };
+
+  const handleAddToCart = (product: Product) => {
+    const cartItem = findItem(product.productId);
+    
+    if (cartItem) {
+      // If item is in cart, remove it
+      removeFromCart(cartItem.id);
+    } else {
+      // If item is not in cart, add it
+      addToCart({
+        productId: product.productId,
+        retailer: product.retailer,
+        quantity: 1,
+        price: product.price,
+        imageUrl: product.image,
+        source: 'search',
+        productUrl: product.url,
+        title: product.title,
+        stars: product.stars,
+        numReviews: product.numReviews,
+        brand: product.brand,
+        categories: product.categories,
+      });
+    }
+  };
+
   // Show loading skeletons
   if (isLoading && products.length === 0) {
     return (
-      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
+      <>
+        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
         <Box sx={{ mb: 3 }}>
           <Typography variant="h5" sx={{ mb: 1, color: '#374151', fontWeight: 600 }}>
             Searching for "{searchQuery}"
@@ -76,13 +121,23 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
           ))}
         </Box>
       </Container>
+      
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        open={detailModalOpen}
+        onClose={handleDetailModalClose}
+        product={selectedProduct}
+        onAddToCart={handleAddToCart}
+      />
+      </>
     );
   }
 
   // Show error state
   if (error && products.length === 0) {
     return (
-      <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
+      <>
+        <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
         <Fade in timeout={500}>
           <Box>
             <ErrorOutlineIcon sx={{ fontSize: 64, color: '#ef4444', mb: 2 }} />
@@ -109,13 +164,23 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
           </Box>
         </Fade>
       </Container>
+      
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        open={detailModalOpen}
+        onClose={handleDetailModalClose}
+        product={selectedProduct}
+        onAddToCart={handleAddToCart}
+      />
+      </>
     );
   }
 
   // Show empty state
   if (!isLoading && products.length === 0 && searchQuery) {
     return (
-      <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
+      <>
+        <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
         <Fade in timeout={500}>
           <Box>
             <SearchOffIcon sx={{ fontSize: 64, color: '#9ca3af', mb: 2 }} />
@@ -138,13 +203,23 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
           </Box>
         </Fade>
       </Container>
+      
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        open={detailModalOpen}
+        onClose={handleDetailModalClose}
+        product={selectedProduct}
+        onAddToCart={handleAddToCart}
+      />
+      </>
     );
   }
 
   // Show results
   if (products.length > 0) {
     return (
-      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
+      <>
+        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
         {/* Results header */}
         <Fade in timeout={300}>
           <Box sx={{ mb: 4 }}>
@@ -202,6 +277,8 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                 <ProductCard
                   product={product}
                   onClick={() => onProductClick?.(product)}
+                  onDetailClick={handleDetailClick}
+                  onAddToCart={handleAddToCart}
                 />
               </Box>
             </Zoom>
@@ -294,6 +371,15 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
           </Fade>
         )}
       </Container>
+      
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        open={detailModalOpen}
+        onClose={handleDetailModalClose}
+        product={selectedProduct}
+        onAddToCart={handleAddToCart}
+      />
+      </>
     );
   }
 

@@ -66,7 +66,7 @@ class CommerceApiClient {
    */
   async searchProducts(params: SearchParams): Promise<SearchResponse> {
     try {
-      const response = await this.client.get<SearchResponse>('/api/commerce/search', {
+      const response = await this.client.get<any>('/api/commerce/search', {
         params: {
           q: params.q,
           page: params.page || 1,
@@ -76,7 +76,21 @@ class CommerceApiClient {
         },
       });
 
-      return response.data;
+      // Map the API response to our expected format
+      return {
+        ...response.data,
+        data: {
+          ...response.data.data,
+          products: response.data.data.products.map((product: any) => ({
+            ...product,
+            stars: product.stars ?? product.rating ?? 0,
+            numReviews: product.numReviews ?? product.reviewCount ?? 0,
+            // Remove old fields to avoid confusion
+            rating: undefined,
+            reviewCount: undefined,
+          })),
+        },
+      };
     } catch (error) {
       // If it's a 404, the API might not be available yet
       if (axios.isAxiosError(error) && error.response?.status === 404) {
@@ -116,22 +130,26 @@ class CommerceApiClient {
             title: "Premium Wireless Headphones with Active Noise Cancellation - 30 Hour Battery Life",
             price: 79.99,
             image: "https://via.placeholder.com/300x300?text=Headphones",
-            rating: 4.5,
-            reviewCount: 1234,
+            stars: 4.5,
+            numReviews: 1234,
             fresh: false,
             retailer: "amazon",
-            url: "#"
+            url: "#",
+            brand: "AudioTech",
+            categories: ["Electronics", "Audio", "Headphones"]
           },
           {
             productId: "MOCK002",
             title: "Ultra-Comfortable Over-Ear Headphones",
             price: 49.99,
             image: "https://via.placeholder.com/300x300?text=Over-Ear",
-            rating: 4.3,
-            reviewCount: 567,
+            stars: 4.3,
+            numReviews: 567,
             fresh: false,
             retailer: "amazon",
-            url: "#"
+            url: "#",
+            brand: "SoundPro",
+            categories: ["Electronics", "Audio", "Headphones"]
           },
         ],
         pagination: {

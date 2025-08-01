@@ -36,7 +36,7 @@ export default function SocialMediaFooter({
             to={createAccountLink}
             sx={{ color: 'primary.main' }}
           >
-            Create Account Instead
+            FAQ
           </Button>
         </Box>
       )}
@@ -54,7 +54,7 @@ export default function SocialMediaFooter({
           <Tooltip title="Twitter">
             <IconButton 
               component="a" 
-              href="https://twitter.com/peperuneypizza" 
+              href="https://twitter.com/pepaylabs" 
               target="_blank"
               size="small"
               sx={{ 
@@ -69,7 +69,7 @@ export default function SocialMediaFooter({
           <Tooltip title="Telegram">
             <IconButton 
               component="a" 
-              href="https://t.me/pepay" 
+              href="https://t.me/pepaylabs" 
               target="_blank"
               size="small"
               sx={{ 
