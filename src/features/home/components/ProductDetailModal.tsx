@@ -301,8 +301,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           sx={{
             position: 'absolute',
             right: 8,
-            top: 8,
+            top: 3,
             color: (theme) => theme.palette.grey[500],
+            padding: '6px',
+            '&:hover': {
+              backgroundColor: 'rgba(0, 0, 0, 0.04)',
+              transform: 'scale(1.05)',
+            },
+            transition: 'all 0.2s ease',
           }}
         >
           <CloseIcon />

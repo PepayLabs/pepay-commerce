@@ -246,31 +246,52 @@ export const useSyncCart = () => {
         return { success: true, message: 'No local items to sync' };
       }
 
-      // Add each local item to the server cart
-      const promises = localCart.map((item) =>
-        cartApi.addItem({
-          productId: item.productId,
-          retailer: item.retailer,
-          quantity: item.quantity,
-          price: item.price,
-          imageUrl: item.imageUrl,
-          source: item.source,
-          productUrl: item.productUrl,
-          title: item.title,
-          stars: item.stars,
-          numReviews: item.numReviews,
-          brand: item.brand,
-          categories: item.categories,
-        })
-      );
-
+      // First, fetch the current server cart
       try {
+        const serverCartResponse = await cartApi.getCart();
+        const serverCart = serverCartResponse.data;
+        
+        // Create a map of server items for easy lookup
+        const serverItemsMap = new Map(
+          serverCart.items.map(item => [`${item.productId}-${item.retailer}`, item])
+        );
+
+        // Filter local items to only include those not already in server cart
+        const itemsToAdd = localCart.filter(localItem => {
+          const key = `${localItem.productId}-${localItem.retailer}`;
+          return !serverItemsMap.has(key);
+        });
+
+        if (itemsToAdd.length === 0) {
+          // Clear local cart since all items already exist on server
+          clearCart();
+          return { success: true, message: 'All items already in server cart' };
+        }
+
+        // Add only new items to the server cart
+        const promises = itemsToAdd.map((item) =>
+          cartApi.addItem({
+            productId: item.productId,
+            retailer: item.retailer,
+            quantity: item.quantity,
+            price: item.price,
+            imageUrl: item.imageUrl,
+            source: item.source,
+            productUrl: item.productUrl,
+            title: item.title,
+            stars: item.stars,
+            numReviews: item.numReviews,
+            brand: item.brand,
+            categories: item.categories,
+          })
+        );
+
         await Promise.all(promises);
         
         // Clear local cart after successful sync
         clearCart();
         
-        return { success: true, message: 'Cart synced successfully' };
+        return { success: true, message: `Added ${itemsToAdd.length} new items to cart`, itemsAdded: itemsToAdd.length };
       } catch (error) {
         console.error('Failed to sync some cart items:', error);
         return { success: false, message: 'Some items could not be synced' };
@@ -280,10 +301,14 @@ export const useSyncCart = () => {
       // Refetch cart from API
       queryClient.invalidateQueries({ queryKey: cartKeys.cart() });
       
-      if (result.success && localCart.length > 0) {
+      if (result.success && result.message !== 'No local items to sync') {
+        const description = result.message === 'All items already in server cart' 
+          ? 'Your cart items are already saved to your account'
+          : result.message;
+          
         toast({
           title: 'Cart synced',
-          description: 'Your cart items have been saved to your account',
+          description,
           variant: 'default',
         });
       }
